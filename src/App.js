@@ -1,55 +1,41 @@
 import React, { Component } from 'react'
+import {Route} from 'react-router-dom'
 import ListContacts from './ListContacts'
-import * as ContactsAPI from './utils/ContactsAPI'
-import CreateContact from './CreateContact'
-import { Route } from 'react-router-dom'
-
+import * as api from './utils/ContactsAPI'
+import CreateContact from './createContact'
 class App extends Component {
-  state = {
-    contacts: []
-  }
-  componentDidMount() {
-    ContactsAPI.getAll()
-      .then((contacts) => {
-        this.setState(() => ({
-          contacts
-        }))
+  componentDidMount(){
+    if(!this.state.contacts.length){
+      api.getAll().then(users => {
+        this.setState({
+          contacts: users
+        })
       })
+    }
+  }
+  state = {
+    contacts: [],
   }
   removeContact = (contact) => {
-    this.setState((currentState) => ({
-      contacts: currentState.contacts.filter((c) => {
-        return c.id !== contact.id
-      })
-    }))
+    api.remove(contact).then(contact => {
+      this.setState((currentState) => ({
+        contacts: currentState.contacts.filter((c) => {
+          return c.id !== contact.id
+        })
+      }))
+    }).catch(err => console.log(`Remove contact ${contact.name} failed - ${err  }`))
+    
+  }
 
-    ContactsAPI.remove(contact)
-  }
-  createContact = (contact) => {
-    ContactsAPI.create(contact)
-      .then((contact) => {
-        this.setState((currentState) => ({
-          contacts: currentState.contacts.concat([contact])
-        }))
-      })
-  }
   render() {
     return (
       <div>
-        <Route exact path='/' render={() => (
-          <ListContacts
-            contacts={this.state.contacts}
-            onDeleteContact={this.removeContact}
-          />
-        )} />
-        <Route path='/create' render={({ history }) => (
-          <CreateContact
-            onCreateContact={(contact) => {
-              this.createContact(contact)
-              history.push('/')
-            }}
-          />
-        )} />
+       <Route path='/' exact render={() => <ListContacts
+          contacts={this.state.contacts}
+          onDeleteContact={this.removeContact}
+          onNavigate={this.onNavigate}
+        />} />
+       <Route path='/create' component={CreateContact}/>
       </div>
     )
   }
